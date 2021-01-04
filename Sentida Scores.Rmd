@@ -1,0 +1,74 @@
+---
+title: "Sentida  Scores"
+author: "Sebastian Scott Engen"
+date: "04/01/2021"
+output: html_document
+---
+
+```{r setup}
+#Loading this will enable Us to work with æøå - VERY IMPORTANT
+Sys.setlocale(category = "LC_ALL", locale = "UTF-8")
+
+#Set Wd
+setwd("/Users/sebastianscottengen/Google Drive/Hogwarts/EXAMS")
+
+#load packages and data
+library(pacman)
+p_load(ggplot2,stringr,dplyr,tidyverse, remotes,manip) 
+
+DK <- read.csv("data_to_r.csv")
+# Remove Faulty Rows
+DK <- filter(DK,language %in% c("da"))
+
+#Load sentida and apply it to one of the tweets, try both total and mean
+remotes::install_github("Guscode/Sentida", force = T)
+library(Sentida)
+```
+
+## Scoring
+
+```{r}
+
+DK$sentida <- lapply(DK$text_lemma, sentida)
+
+```
+
+# Testing
+```{r}
+sentida("Sebastian er hot og flot", output = "total")
+```
+
+# Exporting
+```{r}
+class(DK$sentida)
+DK$sentida <- as.numeric(DK$sentida)
+write.csv(DK,"ALL_Chats_SentidaTested.csv",row.names = F)
+```
+
+# Validation + Binning
+```{r}
+# Read data
+DK <- read.csv("ALL_Chats_SentidaTested.csv",sep=",")
+
+# Bin
+DK$sentida_bin <- ifelse(DK$sentida > 0 , "pos", ifelse(DK$sentida < 0, "neg", "neu"))
+write.csv(DK,"ALL_Chats_SentidaTested_bin.csv",row.names = F)
+
+```
+
+# Write out tableof a 1000 rows for handtagging
+## Find 100 rows for Negative, Neutral and Positive respectivly
+```{r}
+set.seed(8) 
+sampled <- DK %>% do(., sample_n(.,1000)) 
+
+write.csv(sampled,"ReadyForJudging.csv",row.names = F)
+```
+
+
+# Read in handtagged to format correctly
+```{r}
+# Read data
+DK_HT <- read.csv("ReadyForJudging.csv",sep=";")
+write.csv(DK_HT,"ReadyForJudging_Hand_TaggedFinal.csv",row.names = F)
+```
